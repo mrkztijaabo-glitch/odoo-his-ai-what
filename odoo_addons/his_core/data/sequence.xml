@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="seq_his_patient" model="ir.sequence">
+    <field name="name">HIS Patient</field>
+    <field name="code">his.patient</field>
+    <field name="prefix">PAT</field>
+    <field name="padding">5</field>
+  </record>
+  <record id="seq_his_encounter" model="ir.sequence">
+    <field name="name">HIS Encounter</field>
+    <field name="code">his.encounter</field>
+    <field name="prefix">ENC</field>
+    <field name="padding">6</field>
+  </record>
+</odoo>
