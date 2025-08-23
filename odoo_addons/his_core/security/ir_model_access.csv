@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_his_patient_user,access.his.patient.user,model_his_patient,,1,1,1,0
+access_his_encounter_user,access.his.encounter.user,model_his_encounter,,1,1,1,0
