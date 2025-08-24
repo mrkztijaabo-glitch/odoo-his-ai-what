@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_km_department_user,km.department,model_km_department,,1,1,1,0
+access_km_doctor_user,km.doctor,model_km_doctor,,1,1,1,0
+access_km_patient_user,km.patient,model_km_patient,,1,1,1,0
+access_km_appointment_user,km.appointment,model_km_appointment,,1,1,1,0
+access_km_test_user,km.test,model_km_test,,1,1,1,0
+access_km_test_result_user,km.test.result,model_km_test_result,,1,1,1,0

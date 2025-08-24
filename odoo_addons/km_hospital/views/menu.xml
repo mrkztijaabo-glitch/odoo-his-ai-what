@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <menuitem id="km_hospital_menu_root" name="Hospital" sequence="10"/>
+
+  <record id="action_km_departments" model="ir.actions.act_window">
+    <field name="name">Departments</field>
+    <field name="res_model">km.department</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+  <menuitem id="km_hospital_menu_departments" name="Departments" parent="km_hospital_menu_root" action="action_km_departments" sequence="10"/>
+
+  <record id="action_km_doctors" model="ir.actions.act_window">
+    <field name="name">Doctors</field>
+    <field name="res_model">km.doctor</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+  <menuitem id="km_hospital_menu_doctors" name="Doctors" parent="km_hospital_menu_root" action="action_km_doctors" sequence="20"/>
+
+  <record id="action_km_patients" model="ir.actions.act_window">
+    <field name="name">Patients</field>
+    <field name="res_model">km.patient</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+  <menuitem id="km_hospital_menu_patients" name="Patients" parent="km_hospital_menu_root" action="action_km_patients" sequence="30"/>
+
+  <record id="action_km_appointments" model="ir.actions.act_window">
+    <field name="name">Appointments</field>
+    <field name="res_model">km.appointment</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+  <menuitem id="km_hospital_menu_appointments" name="Appointments" parent="km_hospital_menu_root" action="action_km_appointments" sequence="40"/>
+
+  <record id="action_km_tests" model="ir.actions.act_window">
+    <field name="name">Tests</field>
+    <field name="res_model">km.test</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+  <menuitem id="km_hospital_menu_tests" name="Tests" parent="km_hospital_menu_root" action="action_km_tests" sequence="50"/>
+
+  <record id="action_km_test_results" model="ir.actions.act_window">
+    <field name="name">Test Results</field>
+    <field name="res_model">km.test.result</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+  <menuitem id="km_hospital_menu_test_results" name="Test Results" parent="km_hospital_menu_root" action="action_km_test_results" sequence="60"/>
+</odoo>
