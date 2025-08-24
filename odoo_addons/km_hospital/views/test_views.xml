@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_km_test_tree" model="ir.ui.view">
+    <field name="name">km.test.tree</field>
+    <field name="model">km.test</field>
+    <field name="arch" type="xml">
+      <tree>
+        <field name="code"/>
+        <field name="name"/>
+        <field name="unit"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_km_test_form" model="ir.ui.view">
+    <field name="name">km.test.form</field>
+    <field name="model">km.test</field>
+    <field name="arch" type="xml">
+      <form string="Test">
+        <sheet>
+          <group>
+            <field name="code"/>
+            <field name="name"/>
+            <field name="unit"/>
+            <field name="ref_low"/>
+            <field name="ref_high"/>
+            <field name="description"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+</odoo>

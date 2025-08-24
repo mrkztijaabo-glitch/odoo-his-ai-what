@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_km_patient_tree" model="ir.ui.view">
+    <field name="name">km.patient.tree</field>
+    <field name="model">km.patient</field>
+    <field name="arch" type="xml">
+      <tree>
+        <field name="patient_code"/>
+        <field name="name"/>
+        <field name="department_id"/>
+        <field name="primary_doctor_id"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_km_patient_form" model="ir.ui.view">
+    <field name="name">km.patient.form</field>
+    <field name="model">km.patient</field>
+    <field name="arch" type="xml">
+      <form string="Patient">
+        <sheet>
+          <group>
+            <field name="patient_code"/>
+            <field name="name"/>
+            <field name="dob"/>
+            <field name="sex"/>
+            <field name="phone"/>
+            <field name="department_id"/>
+            <field name="primary_doctor_id"/>
+            <field name="allergies"/>
+            <field name="notes"/>
+          </group>
+        </sheet>
+        <div class="oe_chatter">
+          <field name="message_follower_ids" widget="mail_followers"/>
+          <field name="message_ids" widget="mail_thread"/>
+        </div>
+      </form>
+    </field>
+  </record>
+</odoo>

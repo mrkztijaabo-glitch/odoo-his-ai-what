@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_km_test_result_tree" model="ir.ui.view">
+    <field name="name">km.test.result.tree</field>
+    <field name="model">km.test.result</field>
+    <field name="arch" type="xml">
+      <tree>
+        <field name="appointment_id"/>
+        <field name="patient_id"/>
+        <field name="test_id"/>
+        <field name="value"/>
+        <field name="unit"/>
+        <field name="status"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_km_test_result_form" model="ir.ui.view">
+    <field name="name">km.test.result.form</field>
+    <field name="model">km.test.result</field>
+    <field name="arch" type="xml">
+      <form string="Test Result">
+        <header>
+          <button name="action_verify" type="object" string="Verify" states="draft" class="btn-primary"/>
+          <field name="status" widget="statusbar" statusbar_visible="draft,verified"/>
+        </header>
+        <sheet>
+          <group>
+            <field name="appointment_id"/>
+            <field name="patient_id"/>
+            <field name="test_id"/>
+            <field name="value"/>
+            <field name="unit"/>
+          </group>
+        </sheet>
+        <div class="oe_chatter">
+          <field name="message_follower_ids" widget="mail_followers"/>
+          <field name="message_ids" widget="mail_thread"/>
+        </div>
+      </form>
+    </field>
+  </record>
+</odoo>
