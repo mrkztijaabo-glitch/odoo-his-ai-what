@@ -1,0 +1,3 @@
+openai>=1.40
+PyGithub>=2.3
+tenacity>=8.3
