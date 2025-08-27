@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <menuitem id="his_root_menu" name="HIS" sequence="10"/>
+  <menuitem id="his_patient_menu" name="Patients" parent="his_root_menu" sequence="10" action="action_his_patient"/>
+  <menuitem id="his_encounter_menu" name="Encounters" parent="his_root_menu" sequence="20" action="action_his_encounter"/>
+  <menuitem id="his_lab_menu" name="Lab Results" parent="his_root_menu" sequence="30" action="action_his_lab_result"/>
+  <menuitem id="his_rx_menu" name="Prescriptions" parent="his_root_menu" sequence="40" action="action_his_prescription"/>
+</odoo>
