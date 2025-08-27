@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_his_patient_tree" model="ir.ui.view">
+    <field name="name">his.patient.tree</field>
+    <field name="model">his.patient</field>
+    <field name="arch" type="xml">
+      <tree>
+        <field name="display_name"/>
+        <field name="date_of_birth"/>
+        <field name="sex"/>
+        <field name="phone_e164"/>
+        <field name="whatsapp_opt_in"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_his_patient_form" model="ir.ui.view">
+    <field name="name">his.patient.form</field>
+    <field name="model">his.patient</field>
+    <field name="arch" type="xml">
+      <form string="Patient">
+        <sheet>
+          <group>
+            <group>
+              <field name="first_name"/>
+              <field name="last_name"/>
+              <field name="date_of_birth"/>
+              <field name="sex"/>
+            </group>
+            <group>
+              <field name="phone_e164"/>
+              <field name="whatsapp_opt_in"/>
+              <field name="preferred_language"/>
+            </group>
+          </group>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_his_patient" model="ir.actions.act_window">
+    <field name="name">Patients</field>
+    <field name="res_model">his.patient</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+</odoo>
