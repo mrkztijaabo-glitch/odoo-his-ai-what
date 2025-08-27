@@ -1,138 +1,100 @@
-import os, re, json, subprocess, textwrap, pathlib
-from tenacity import retry, stop_after_attempt, wait_exponential
-from github import Github
-from openai import OpenAI
-
-def run(cmd, cwd=None, check=True):
-    print("+", cmd)
-    r = subprocess.run(cmd, shell=True, cwd=cwd, text=True,
-                       capture_output=True)
-    if check and r.returncode != 0:
-        raise RuntimeError(f"{cmd}\n{r.stdout}\n{r.stderr}")
-    return r.stdout
-
-def collect_repo_context(max_chars=12000):
-    """Collect a slice of repo context for the prompt."""
-    globs = ["README.md", "pyproject.toml", "requirements.txt",
-             "**/*.py", "**/*.xml", "**/*.js", "**/*.ts"]
-    seen, buf = set(), []
-    for pattern in globs:
-        for p in pathlib.Path(".").rglob(pattern):
-            if p.is_file() and p.suffix in {".md",".py",".xml",".js",".ts",".toml"}:
-                if p.name.startswith(".") or p.as_posix() in seen:
-                    continue
-                seen.add(p.as_posix())
-                try:
-                    txt = p.read_text(encoding="utf-8", errors="ignore")
-                except Exception:
-                    continue
-                snippet = txt[:2000]
-                buf.append(f"\n=== {p.as_posix()} ===\n{snippet}")
-                if sum(len(b) for b in buf) > max_chars:
-                    return "\n".join(buf)
-    return "\n".join(buf)
-
-SYSTEM_PROMPT = """You are a careful software engineer.
-Given a GitHub issue/comment describing a change, produce a single unified diff patch.
-Rules:
-- Output ONLY between the markers:
 ***BEGIN PATCH***
-<unified diff>
+--- a/agent/main.py
++++ b/agent/main.py
+@@
+ SYSTEM_PROMPT = """You are a careful software engineer.
+-Your only job is to produce a valid unified diff patch.
++Your ONLY output is a valid unified diff patch.
+ 
+ Rules:
+-- Output must be *only* between the markers:
++- Output must be ONLY between the markers:
+ ***BEGIN PATCH***
+ <unified diff>
+ ***END PATCH***
+-- No explanations, no prose, no notes outside the markers.
+-- Patch must apply cleanly with `git apply --whitespace=fix`.
+-- Always include proper file headers, e.g.:
+-  --- path/to/file.py
+-  +++ path/to/file.py
++- No explanations, no markdown fences.
++- The patch MUST include headers exactly like:
++  --- a/odoo_addons/his_core/models/patient.py
++  +++ b/odoo_addons/his_core/models/patient.py
++- Patch must apply with `git apply --whitespace=fix` (or `git apply -3`).
+ - Keep the change minimal and relevant to the issue.
+ """
+@@
+-def extract_patch(text):
+-    m = re.search(r"\*\*\*BEGIN PATCH\*\*\*(.+?)\*\*\*END PATCH\*\*\*", text, re.S)
+-    return m.group(1).strip() if m else ""
++def extract_patch(text: str) -> str:
++    """Extract patch between markers and strip accidental code fences."""
++    m = re.search(r"\*\*\*BEGIN PATCH\*\*\*(.+?)\*\*\*END PATCH\*\*\*", text, re.S)
++    if not m:
++        return ""
++    patch = m.group(1).strip()
++    # Remove accidental ```… fences
++    patch = re.sub(r"^```[^\n]*\n", "", patch)
++    patch = re.sub(r"\n```$", "", patch)
++    return patch
++
++def _first_path_from_comment(comment_body: str) -> str | None:
++    # Grab something like odoo_addons/.../.py from the comment
++    m = re.search(r"(odoo_addons/[A-Za-z0-9_/\.-]+\.py)", comment_body)
++    return m.group(1) if m else None
++
++def _generate_unified_diff(path: str, new_content: str) -> str:
++    """Create a valid unified diff from current file to new content."""
++    import difflib, io
++    a_path = f"a/{path}"
++    b_path = f"b/{path}"
++    try:
++        old = pathlib.Path(path).read_text(encoding="utf-8").splitlines(keepends=True)
++    except FileNotFoundError:
++        old = []
++    new = io.StringIO(new_content).read().splitlines(keepends=True)
++    diff = difflib.unified_diff(old, new, fromfile=a_path, tofile=b_path, lineterm="")
++    # Join and ensure trailing newline
++    out = "\n".join(diff)
++    if not out.endswith("\n"):
++        out += "\n"
++    return out
++
++def _looks_like_unified_diff(patch: str) -> bool:
++    return patch.startswith("--- ") and "\n+++ " in patch
+@@
+-def apply_patch(patch):
+-    pathlib.Path("agent_out.patch").write_text(patch, encoding="utf-8")
+-    run("git apply --whitespace=fix agent_out.patch")
+-    run("git add -A")
++def apply_patch(patch: str):
++    # Save raw for debugging
++    pathlib.Path("agent_out.patch").write_text(patch, encoding="utf-8")
++    # If it isn't a proper diff, treat the text as new file content and build a diff
++    if not _looks_like_unified_diff(patch):
++        print("Model did not return a unified diff; attempting fallback…", flush=True)
++        # Try to infer target path from the comment
++        event = json.loads(pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
++        comment_body = event.get("comment", {}).get("body", "")
++        target = _first_path_from_comment(comment_body)
++        if not target:
++            raise RuntimeError("Cannot infer target path from comment; patch was not a diff.")
++        # Build a proper unified diff
++        patch = _generate_unified_diff(target, patch)
++        pathlib.Path("agent_out.patch").write_text(patch, encoding="utf-8")
++        print("Fallback generated a unified diff.", flush=True)
++
++    # Basic sanity check: headers must exist
++    if "--- " not in patch or "+++ " not in patch:
++        raise RuntimeError("Generated patch looks invalid (missing ---/+++ headers):\n" + patch[:600])
++
++    # Try normal apply then 3-way merge
++    try:
++        run("git apply --whitespace=fix agent_out.patch")
++        run("git add -A")
++    except RuntimeError:
++        print("git apply failed, attempting 3-way merge (-3)…", flush=True)
++        run("git apply -3 --whitespace=fix agent_out.patch")
++        run("git add -A")
 ***END PATCH***
-- The diff must apply cleanly with `git apply --whitespace=fix`.
-- Keep changes minimal; avoid unrelated edits.
-"""
-
-def build_user_prompt(issue_title, issue_body, comment_body, repo_context):
-    return textwrap.dedent(f"""
-    Task:
-    - Issue title: {issue_title}
-    - Issue body:\n{issue_body}
-    - Trigger comment:\n{comment_body}
-
-    Project context (truncated):
-    {repo_context}
-
-    Produce a unified diff patch for this repository.
-    """)
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-def ask_openai(prompt, model=None):
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    if model is None:
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    print(f"Using OpenAI model: {model}")
-    resp = client.responses.create(
-        model=model,
-        input=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-    )
-    text = getattr(resp, "output_text", None)
-    if not text and resp.output and len(resp.output):
-        if resp.output[0].content:
-            text = "".join(
-                [c.get("text", {}).get("value", "")
-                 for c in resp.output[0].content if isinstance(c, dict)]
-            )
-    return text or ""
-
-def extract_patch(text):
-    m = re.search(r"\*\*\*BEGIN PATCH\*\*\*(.+?)\*\*\*END PATCH\*\*\*", text, re.S)
-    return m.group(1).strip() if m else ""
-
-def create_branch(branch):
-    run(f"git config user.name 'github-actions[bot]'")
-    run(f"git config user.email '41898282+github-actions[bot]@users.noreply.github.com'")
-    run(f"git checkout -b {branch}")
-
-def apply_patch(patch):
-    pathlib.Path("agent_out.patch").write_text(patch, encoding="utf-8")
-    run("git apply --whitespace=fix agent_out.patch")
-    run("git add -A")
-
-def commit_and_push(branch, message):
-    run(f"git commit -m {json.dumps(message)}")
-    run(f"git push --set-upstream origin {branch}")
-
-def open_pr(repo_full, head, base, title, body):
-    gh = Github(os.environ.get("GITHUB_TOKEN"))
-    repo = gh.get_repo(repo_full)
-    pr = repo.create_pull(title=title, body=body, head=head, base=base)
-    return pr.html_url
-
-def main():
-    event_path = os.environ.get("GITHUB_EVENT_PATH")
-    if not event_path:
-        raise SystemExit("Run inside GitHub Actions.")
-    event = json.loads(pathlib.Path(event_path).read_text())
-    repo_full = os.environ["GITHUB_REPOSITORY"]
-    default_branch = os.environ.get("GITHUB_REF_NAME", "main")
-
-    issue = event["issue"]
-    comment = event["comment"]
-
-    if not comment["body"].strip().lower().startswith("/agent"):
-        print("Comment does not start with /agent — exiting.")
-        return
-
-    repo_ctx = collect_repo_context()
-    prompt = build_user_prompt(issue["title"], issue.get("body",""),
-                               comment["body"], repo_ctx)
-    raw = ask_openai(prompt)
-    patch = extract_patch(raw)
-    if not patch:
-        raise RuntimeError("Model did not return a patch.")
-
-    branch = f"agent/{issue['number']}-{comment['id']}"
-    create_branch(branch)
-    apply_patch(patch)
-    commit_and_push(branch, f"agent: {issue['title']}")
-    pr_url = open_pr(repo_full, branch, default_branch,
-                     f"agent: {issue['title']}",
-                     "Proposed by coding-agent 🤖")
-    print("Opened PR:", pr_url)
-
-if __name__ == "__main__":
-    main()
