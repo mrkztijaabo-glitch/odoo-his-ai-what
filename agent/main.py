@@ -12,7 +12,7 @@ def run(cmd, cwd=None, check=True):
     return r.stdout
 
 def collect_repo_context(max_chars=12000):
-    """Collect a small slice of repo context to keep prompts fast."""
+    """Collect a slice of repo context for the prompt."""
     globs = ["README.md", "pyproject.toml", "requirements.txt",
              "**/*.py", "**/*.xml", "**/*.js", "**/*.ts"]
     seen, buf = set(), []
@@ -26,7 +26,7 @@ def collect_repo_context(max_chars=12000):
                     txt = p.read_text(encoding="utf-8", errors="ignore")
                 except Exception:
                     continue
-                snippet = txt[:2000]  # keep it light
+                snippet = txt[:2000]
                 buf.append(f"\n=== {p.as_posix()} ===\n{snippet}")
                 if sum(len(b) for b in buf) > max_chars:
                     return "\n".join(buf)
@@ -57,9 +57,11 @@ def build_user_prompt(issue_title, issue_body, comment_body, repo_context):
     """)
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-def ask_openai(prompt, model="gpt-5.1-mini"):
+def ask_openai(prompt, model=None):
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    # Responses API (simple text output)
+    if model is None:
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    print(f"Using OpenAI model: {model}")
     resp = client.responses.create(
         model=model,
         input=[
@@ -67,13 +69,13 @@ def ask_openai(prompt, model="gpt-5.1-mini"):
             {"role": "user", "content": prompt},
         ],
     )
-    # Convenience property output_text is available; fall back if needed
     text = getattr(resp, "output_text", None)
-    if not text:
-        # Fallback extraction
-        if resp.output and len(resp.output) and resp.output[0].content:
-            text = "".join([c.get("text", {}).get("value", "") 
-                            for c in resp.output[0].content if isinstance(c, dict)])
+    if not text and resp.output and len(resp.output):
+        if resp.output[0].content:
+            text = "".join(
+                [c.get("text", {}).get("value", "")
+                 for c in resp.output[0].content if isinstance(c, dict)]
+            )
     return text or ""
 
 def extract_patch(text):
