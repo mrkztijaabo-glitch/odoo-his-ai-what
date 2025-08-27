@@ -1,0 +1,15 @@
+```diff
+diff --git a/odoo_addons/odoo_addons/his_core/models/patient.py b/odoo_addons/odoo_addons/his_core/models/patient.py
+index 2f8c2ef..d2f0c77 100644
+--- a/odoo_addons/odoo_addons/his_core/models/patient.py
++++ b/odoo_addons/odoo_addons/his_core/models/patient.py
+@@ -12,7 +12,7 @@ class HisPatient(models.Model):
+ 
+     @api.model_create_multi
+     def create(self, vals_list):
+-        for vals in vals_list:
++        for vals in vals_list: 
+             if not vals.get("patient_code"):
+                 vals["patient_code"] = self.env["ir.sequence"].next_by_code("his.patient") or "/"
+         return super().create(vals_list)
+```
