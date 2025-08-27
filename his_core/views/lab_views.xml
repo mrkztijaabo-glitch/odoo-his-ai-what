@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_his_lab_result_tree" model="ir.ui.view">
+    <field name="name">his.lab.result.tree</field>
+    <field name="model">his.lab.result</field>
+    <field name="arch" type="xml">
+      <tree>
+        <field name="patient_id"/>
+        <field name="test_code"/>
+        <field name="test_name"/>
+        <field name="value"/>
+        <field name="unit"/>
+        <field name="status"/>
+        <field name="observed_at"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_his_lab_result_form" model="ir.ui.view">
+    <field name="name">his.lab.result.form</field>
+    <field name="model">his.lab.result</field>
+    <field name="arch" type="xml">
+      <form string="Lab Result">
+        <sheet>
+          <group>
+            <group>
+              <field name="patient_id"/>
+              <field name="encounter_id"/>
+            </group>
+            <group>
+              <field name="test_code"/>
+              <field name="test_name"/>
+              <field name="value"/>
+              <field name="unit"/>
+              <field name="reference_range"/>
+              <field name="status"/>
+              <field name="observed_at"/>
+            </group>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_his_lab_result" model="ir.actions.act_window">
+    <field name="name">Lab Results</field>
+    <field name="res_model">his.lab.result</field>
+    <field name="view_mode">tree,form</field>
+  </record>
+</odoo>
