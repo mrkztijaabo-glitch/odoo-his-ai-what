@@ -1,0 +1,6 @@
+```
+--- odoo_addons/his_core/models/patient.py
++++ odoo_addons/his_core/models/patient.py
+@@ -30,0 +31 @@
++
+```
