@@ -6,3 +6,4 @@ class Patient(models.Model):
 
     name = fields.Char(string='Name', required=True, tracking=True)
     phone = fields.Char(string='Phone', required=True, tracking=True)
+    email = fields.Char(string='Email', tracking=True)
