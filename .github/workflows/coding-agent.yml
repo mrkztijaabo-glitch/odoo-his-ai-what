@@ -3,6 +3,7 @@ name: coding-agent
 on:
   issue_comment:
     types: [created, edited]  # runs when someone comments
+  workflow_dispatch:
 
 permissions:
   contents: write        # create branch & push
